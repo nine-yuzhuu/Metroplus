@@ -25,16 +25,21 @@ jobs:
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
+      - name: Diagnostik
         run: |
+          echo "=== isi folder ==="
+          ls -la
+          echo "=== settings ==="
+          cat settings.gradle* 2>/dev/null | head -50
+          echo "=== daftar modul ==="
           chmod +x gradlew
-          TASK=$(./gradlew :app:tasks --all -q --no-daemon | grep -oE 'assemble[A-Za-z]*Foss[A-Za-z]*Debug' | grep -i universal | head -1 || true)
-          echo "Task yang dipakai: $TASK"
-          if [ -z "$TASK" ]; then TASK=assembleUniversalFossDebug; fi
-          ./gradlew :app:$TASK --no-daemon
+          ./gradlew projects --no-daemon -q 2>&1 | head -40 || true
+
+      - name: Build APK
+        run: ./gradlew assembleUniversalFossDebug --no-daemon
 
       - name: Simpan APK
         uses: actions/upload-artifact@v4
         with:
           name: Metroplus-apk
-          path: app/build/outputs/apk/**/*.apk
+          path: '**/build/outputs/apk/**/*.apk'
