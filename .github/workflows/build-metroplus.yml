@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       METROLIST_APPLICATION_ID: com.metroplus.music
     steps:
@@ -25,18 +25,17 @@ jobs:
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Diagnostik
+      - name: Cari task lalu build
         run: |
-          echo "=== isi folder ==="
-          ls -la
-          echo "=== settings ==="
-          cat settings.gradle* 2>/dev/null | head -50
-          echo "=== daftar modul ==="
           chmod +x gradlew
-          ./gradlew projects --no-daemon -q 2>&1 | head -40 || true
-
-      - name: Build APK
-        run: ./gradlew assembleUniversalFossDebug --no-daemon
+          ./gradlew :androidApp:tasks --all --no-daemon -q > tasks.txt 2>&1 || true
+          echo "=== task assemble Debug yang tersedia ==="
+          grep -oE 'assemble[A-Za-z]*Debug' tasks.txt | sort -u
+          TASK=$(grep -oE 'assemble[A-Za-z]*Debug' tasks.txt | sort -u | grep -i foss | grep -i universal | head -1 || true)
+          if [ -z "$TASK" ]; then TASK=$(grep -oE 'assemble[A-Za-z]*Debug' tasks.txt | sort -u | grep -i foss | head -1 || true); fi
+          if [ -z "$TASK" ]; then TASK=assembleDebug; fi
+          echo "Task yang dipakai: $TASK"
+          ./gradlew :androidApp:$TASK --no-daemon
 
       - name: Simpan APK
         uses: actions/upload-artifact@v4
